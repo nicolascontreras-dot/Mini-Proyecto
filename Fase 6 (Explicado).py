@@ -1,0 +1,285 @@
+# Objetos Interactivos y Tecla de Acción
+#=======================================
+import pygame
+import sys
+
+# Paso 1. Inicialización de Pygame
+pygame.init()
+
+# Paso 25. Inicialización del sistema de fuentes/texto
+pygame.font.init()
+
+# Paso 2. Configuración de la pantalla
+ancho_pantalla = 1280
+alto_pantalla = 720
+pantalla = pygame.display.set_mode((ancho_pantalla,alto_pantalla))
+
+# Paso 3. Asignación del nombre de la pantalla
+pygame.display.set_caption("Mi Juego de Aventura")
+
+# Paso 4. Control de fotogramas por segundo (FPS)
+reloj = pygame.time.Clock()
+FPS = 60
+
+# Paso 6. Propiedades del Jugador
+
+# Paso 9. Actualizar las propiedades
+#jugador_x = ancho_pantalla//2
+#jugador_y = alto_pantalla//2
+
+# Paso 14. Migrar las propiedades a la Clase
+#jugador_tamaño = 40
+#jugador_x = ancho_pantalla//2 - jugador_tamaño//2       #Actualizado
+#jugador_y = alto_pantalla//2 - jugador_tamaño//2        #Actualizado
+#jugador_velocidad = 6       #Actualizado
+#jugador_color = (0, 200, 100)       #Verde
+
+# Paso 26. Configurar fuente para renderizar texto en pantalla
+fuente = pygame.font.SysFont("arial", 22, bold=True)
+
+# Paso 19. Crear obstáculos
+# --- CLASE PARED / OBSTÁCULOS ---
+class Pared:
+    def __init__(self, x, y, ancho, alto):
+        self.rect = pygame.Rect(x, y, ancho, alto)
+        self.color = (120, 120, 120)        #Gris Piedra
+        
+    def dibujar(self, superficie):
+        pygame.draw.rect(superficie, self.color, self.rect)
+
+# Paso 27. Crear interacciones adicionales
+# --- CLASE COFRE ---
+class Cofre:
+    def __init__(self, x, y):
+        self.rect = pygame.Rect(x, y, 40, 40)
+        self.abierto = False
+        self.color_cerrado = (150, 90, 30)      #Madera / Marrón
+        self.color_abierto = (220, 180, 50)     #Oro / Amarillo
+    
+    def interactuar(self):
+        if not self.abierto:
+            self.abierto = True
+            return "¡Abriste un cofre y encontraste una moneda!"
+        return "El cofre ya está vacío."
+    
+    def dibujar(self, superficie):
+        color = self.color_abierto if self.abierto else self.color_cerrado
+        pygame.draw.rect(superficie, color, self.rect)
+
+# --- CLASE CUEVA/PUERTA ---
+class Cueva:
+    def __init__(self, x, y):
+        self.rect = pygame.Rect(x, y, 60, 60)
+        self.color = (10, 10, 10)      #Entrada oscura
+    
+    def interactuar(self):
+        return "Entraste a la cueva misteriosa..."
+    
+    def dibujar(self, superficie):
+        pygame.draw.rect(superficie, self.color, self.rect)
+        
+# --- CLASE JUGADOR ---
+class Jugador:
+    def __init__(self, x, y):
+        self.tamaño = 40
+        # pygame.Rect guarda (X, Y, ancho, alto)
+        self.rect = pygame.Rect(x, y, self.tamaño, self.tamaño)
+        self.velocidad = 6
+        self.color = (0, 200, 100)
+
+# Paso 20. Actualizar el Movimiento
+    def mover(self, teclas, obstaculos):
+        dx = 0      #Define cuánto se quiere desplazar el personaje en la horizontal
+        dy = 0      #Define cuánto se quiere desplazar el personaje en la vertical
+               
+        if teclas[pygame.K_LEFT]:
+            dx -= self.velocidad
+        if teclas[pygame.K_RIGHT]:
+            dx += self.velocidad
+        if teclas[pygame.K_UP]:
+            dy -= self.velocidad
+        if teclas[pygame.K_DOWN]:
+            dy += self.velocidad
+
+        # --- Movimiento y colisión en eje X ---
+        self.rect.x += dx
+        for pared in obstaculos:
+            if self.rect.colliderect(pared.rect):
+                if dx > 0:      #Moviéndose a la derecha -> pegar al lado izquierd del objeto
+                    self.rect.right = pared.rect.left
+                if dx < 0:      #Moviéndose a la izquierda -> pegar al lado derecho del objeto
+                    self.rect.left = pared.rect.right
+        
+        # --- Movimiento y colisión en eje Y ---
+        self.rect.y += dy
+        for pared in obstaculos:
+            if self.rect.colliderect(pared.rect):
+                if dy > 0:      #Moviéndose hacia abajo -> pegar al borde superior del objeto
+                    self.rect.bottom = pared.rect.top
+                if dy < 0:      #Moviéndose hacia arriba -> pegar al borde inferior del objeto
+                    self.rect.top = pared.rect.bottom
+    
+    # Paso 28. Implementar el método de interacción
+    def obtener_zona_interaccion(self):
+        # Crea un área ligeramente más grande alrededor del jugador para detectar cercanía
+        return self.rect.inflate(30,30)
+    
+    def dibujar(self, superficie):
+        pygame.draw.rect(superficie, self.color, self.rect)
+
+# Paso 15. Creación del Objeto jugador a partir de la Clase
+jugador = Jugador(ancho_pantalla//2 - 20, alto_pantalla//2 - 20)
+  
+# Paso 10. Sistemas de Mapas / Salas
+# Coordenadas del mundo (0,0) es la sala incial
+sala_x = 0
+sala_y = 0
+
+# Paso 29. Crear diccionario de objetos interactivos por sala
+salas_interacciones = {
+    (0,-1) : [
+        Cofre(400, 300),
+        Cueva(200, 200)
+        ],
+    (0,1) : [
+        Cofre(200, 200)
+        ]
+}
+# Paso 11. Colores solo para diferenciar las salas en la matriz
+# usa el formato de diccionario (coordenada) : (color)
+salas_colores = {
+    (0,0):(30,30,30),   #Centro (Gris)
+    (1,0):(50,20,20),   #Este (Rojo)
+    (-1,0):(20,50,20),  #Oeste (Verde)
+    (0,1):(20,20,50),   #Sur (Azul)
+    (0,-1):(50,50,20),  #Norte (Amarillo)
+}
+
+# Paso 21. Crear el diccionario de las paredes por sala
+salas_paredes = {
+    # Sala inicial (0,0) : Dos rocas/estructuras en el centro
+    (0,0) : [
+        Pared(300, 200, 150, 100),
+        Pared(800, 400, 200, 150)
+        ],
+    # Sala Este (1,0) : Una gran estructura central
+    (1,0) : [
+        Pared(500, 150, 280, 420)
+    ],
+    # Sala Oeste (-1,0) : Un pasillo estrecho
+    (-1,0) : [
+        Pared(0, 0, 1280, 150),     #Pared superior
+        Pared(0, 570, 1280, 150)    #Pared inferior
+    ]
+}
+
+#Paso 30. Controlar los mensaje y el tiempo
+mensaje_pantalla = ""
+tiempo_mensaje = 0
+
+# Paso 5. Bucle Principal del Juego (Game Loop)
+encendido = True
+while encendido:
+    # Paso 31. Implementar mensaje e interacciones
+    # Restar tiempo al mensaje activo
+    if tiempo_mensaje > 0:
+        tiempo_mensaje -= 1
+    else:
+        mensaje_pantalla = ""
+    
+    obstaculos_actuales = salas_paredes.get((sala_x, sala_y), [])
+    interacciones_actuales = salas_interacciones.get((sala_x,sala_y), [])
+    
+    # --- Captura de Eventos ---
+    for evento in pygame.event.get():
+        if evento.type == pygame.QUIT:      #Si el usuario hace clic en la "X" de la pantalla
+            encendido = False
+        # Paso 32. Implementar la tecla de interacción
+        # Interactuar con la tecla_e
+        elif evento.type == pygame.KEYDOWN:
+            if evento.key == pygame.K_e:
+                zona_jugador = jugador.obtener_zona_interaccion()
+                for objeto in interacciones_actuales:
+                    if zona_jugador.colliderect(objeto.rect):
+                        mensaje_pantalla = objeto.interactuar()
+                        tiempo_mensaje = 120        #Mostrar el mensaje durante 2 segundo (120 fotogramas)
+                        break
+    
+    # --- Actualización de Lógica ---
+    # (Aquí irá el movimiento del personaje, acciones, ataques, movimiento del enemigo, IA del enemigo, etc.)
+    # Paso 22. Obtener las paredes de la sala actual (o lista vacía si no hay configuradas)
+    #obstaculos_actuales = salas_paredes.get((sala_x,sala_y),[])
+    
+    # Paso 7. Captura del Teclado
+    teclas = pygame.key.get_pressed()
+    
+    # Paso 16. Migrar el movimiento a la clase
+    #if teclas[pygame.K_LEFT]:
+    #    jugador_x -= jugador_velocidad
+    #if teclas[pygame.K_RIGHT]:
+    #    jugador_x += jugador_velocidad
+    #if teclas[pygame.K_UP]:
+    #    jugador_y -= jugador_velocidad
+    #if teclas[pygame.K_DOWN]:
+    #    jugador_y += jugador_velocidad
+    
+    # Paso 23. Actualizar el Movimiento 
+    jugador.mover(teclas, obstaculos_actuales)
+    
+    # Paso 12. Transición de Salas por Borde
+    # Paso 17. Actualizar la Transición
+    # Borde Derecho -> Ir al Este
+    if jugador.rect.x > ancho_pantalla: 
+        sala_x += 1
+        jugador.rect.x = 0
+    # Borde Izquierdo -> Ir al Oeste
+    elif jugador.rect.x < -jugador.tamaño:    #Actualizado
+        sala_x -= 1
+        jugador.rect.x = ancho_pantalla - jugador.tamaño
+    # Borde Inferior -> Ir al Sur
+    if jugador.rect.y > alto_pantalla:
+        sala_y += 1
+        jugador.rect.y = 0
+    # Borde Superior -> Ir al Norte
+    elif jugador.rect.y < -jugador.tamaño:
+        sala_y -= 1
+        jugador.rect.y = alto_pantalla - jugador.tamaño
+    
+    # --- Renderizado / Dibujo ---
+    # Paso 13. Actualizar el Renderizado
+    # Busca el color según la sala actual; si no existe en la lista, usa fondo negro
+    fondo_color = salas_colores.get((sala_x,sala_y),(10,10,10)) 
+    #pantalla.fill((30,30,30))       #Limpia la pantalla dibujando un fondo gris oscuro (R G B)
+    pantalla.fill(fondo_color)      #Actualizado
+    
+    # Paso 24. Dibujar los obstáculos de las sala
+    for pared in obstaculos_actuales:
+        pared.dibujar(pantalla)
+
+    # Paso 33. Dibujar Objetos Interactivos
+    zona_jugador = jugador.obtener_zona_interaccion()
+    for objeto in interacciones_actuales:
+        objeto.dibujar(pantalla)
+        # Si el jugador está cerca aparecerá el texto "(E)" flotante
+        if zona_jugador.colliderect(objeto.rect):
+            texto_e = fuente.render("[E]", True, (255, 255, 255))
+            pantalla.blit(texto_e,(objeto.rect.x + 5, objeto.rect.y - 25))
+            
+    # Paso 8. Dibuja al Jugador (Posición X, Posición Y, Ancho, Alto)
+    # Paso 18. Actualiza el Dibujo del Jugador
+    #pygame.draw.rect(pantalla,jugador_color,(jugador_x,jugador_y,jugador_tamaño,jugador_tamaño))
+    jugador.dibujar(pantalla)
+    
+    # Paso 34. Dibujar mensaje de Interacció en pantalla si existe
+    if mensaje_pantalla:
+        texto_renderizado = fuente.render(mensaje_pantalla, True, (255, 255, 0))
+        pantalla.blit(texto_renderizado, (ancho_pantalla//2 - texto_renderizado.get_width()//2, 50))
+    # Actualiza lo que se ve en la pantalla
+    pygame.display.flip()
+    
+    # Controla que el juego corra a 60 FPS
+    reloj.tick(FPS)
+    
+# Cierra el programa limpiamente
+pygame.quit()
+sys.exit()
