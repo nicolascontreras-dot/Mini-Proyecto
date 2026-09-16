@@ -88,7 +88,8 @@ class NPC:
         self.dialogo = linea_dialogo
         self.color = color
     
-    def interactuar(self):
+    # Paso 47. Actualizar la interacción del NPC
+    def interactuar(self, inventario):
         return self.nombre, self.dialogo
     
     def dibujar(self,superficie):
@@ -113,10 +114,12 @@ class Cofre:
         self.color_cerrado = (150, 90, 30)      #Madera / Marrón
         self.color_abierto = (220, 180, 50)     #Oro / Amarillo
     
-    def interactuar(self):
+    # Paso 46. Actualizamos el método interactuar para el inventario
+    def interactuar(self, inventario):
         if not self.abierto:
             self.abierto = True
-            return "Sistema", "¡Abriste un cofre y encontraste una moneda!"
+            inventario.agregar("Moneda de Oro")     # Se guarda el objeto
+            return "Sistema", "¡Abriste un cofre y obtuviste una Moneda de Oro!"
         return "Sistema", "El cofre ya está vacío."
     
     def dibujar(self, superficie):
@@ -128,8 +131,8 @@ class Cueva:
     def __init__(self, x, y):
         self.rect = pygame.Rect(x, y, 60, 60)
         self.color = (10, 10, 10)      #Entrada oscura
-    
-    def interactuar(self):
+    # Paso 48. Actualizar la interacción de la cueva
+    def interactuar(self, inventario):
         return "Sistema", "Entraste a la cueva misteriosa..."
     
     def dibujar(self, superficie):
@@ -184,6 +187,43 @@ class Jugador:
     def dibujar(self, superficie):
         pygame.draw.rect(superficie, self.color, self.rect)
 
+# Paso 45. Implementación de un inventario
+# --- CLASE INVENTARIO ---
+class Inventario:
+    def __init__(self):
+        self.objetos = []
+        self.abierto = False
+        self.rect = pygame.Rect(ancho_pantalla - 250, 50, 200, 300)
+        
+    def agregar(self, item):
+        self.objetos.append(item)
+        
+    def alternar(self):
+        self.abierto = not self.abierto
+        
+    def dibujar(self, superficie):
+        if not self.abierto:
+            return
+            
+        # Fondo del inventario
+        pygame.draw.rect(superficie, (40, 40, 50), self.rect)
+        pygame.draw.rect(superficie, (200, 200, 200), self.rect, 2)
+        
+        # Título
+        texto_titulo = fuente.render("INVENTARIO", True, (255, 255, 255))
+        superficie.blit(texto_titulo, (self.rect.x + 10, self.rect.y + 10))
+        
+        # Dibujar los objetos
+        y_offset = 50
+        if len(self.objetos) == 0:
+            texto_vacio = fuente.render("(Vacío)", True, (150, 150, 150))
+            superficie.blit(texto_vacio, (self.rect.x + 10, self.rect.y + y_offset))
+        else:
+            for item in self.objetos:
+                texto_item = fuente.render("- " + item, True, (200, 255, 200))
+                superficie.blit(texto_item, (self.rect.x + 10, self.rect.y + y_offset))
+                y_offset += 30
+ 
 # Paso 15. Creación del Objeto jugador a partir de la Clase
 jugador = Jugador(ancho_pantalla//2 - 20, alto_pantalla//2 - 20)
 
@@ -242,6 +282,9 @@ salas_paredes = {
 #mensaje_pantalla = ""
 #tiempo_mensaje = 0
 
+# Paso 49. Crear el inventario
+inventario_jugador = Inventario()
+
 # Paso 5. Bucle Principal del Juego (Game Loop)
 encendido = True
 while encendido:
@@ -271,7 +314,11 @@ while encendido:
         # Paso 32. Implementar la tecla de interacción
         # Interactuar con la tecla_e
         elif evento.type == pygame.KEYDOWN:
-            if evento.key == pygame.K_e:
+            # Paso 50. Actualizar la revisión de teclas
+            if evento.key == pygame.K_i:
+                inventario_jugador.alternar()     # Abre y cierra con la "I"
+                
+            elif evento.key == pygame.K_e:
                 # Paso 41. Actualizamos para implementar la caja de diálogo
                 if sistema_dialogo.activo:
                     sistema_dialogo.cerrar()        # Si está abierta, la 'E' la cierra
@@ -279,7 +326,7 @@ while encendido:
                     zona_jugador = jugador.obtener_zona_interaccion()
                     for objeto in interacciones_actuales:
                         if zona_jugador.colliderect(objeto.rect):
-                            nombre, texto = objeto.interactuar()
+                            nombre, texto = objeto.interactuar(inventario_jugador)      # Actualizado
                             sistema_dialogo.iniciar(nombre, texto)        #Abrimos el diálogo
                             break
     
@@ -357,6 +404,9 @@ while encendido:
     #    texto_renderizado = fuente.render(mensaje_pantalla, True, (255, 255, 0))
     #    pantalla.blit(texto_renderizado, (ancho_pantalla//2 - texto_renderizado.get_width()//2, 50))
     sistema_dialogo.dibujar(pantalla)       #Actualizado
+    
+    # Paso 51. Mostrar el inventario en pantalla
+    inventario_jugador.dibujar(pantalla)
     
     # Actualiza lo que se ve en la pantalla
     pygame.display.flip()
