@@ -83,7 +83,7 @@ class SistemaDialogo:
 # Paso 36. Crear al Personaje No Jugador (NPC)
 class NPC:
     def __init__(self, x, y, nombre, linea_dialogo, color):
-        self.rect = pygame.Rect(x, y, 40, 40)
+        self.rect = pygame.Rect(x, y, 100, 100)
         self.nombre = nombre
         self.dialogo = linea_dialogo
         self.color = color
@@ -93,7 +93,7 @@ class NPC:
         return self.nombre, self.dialogo
     
     def dibujar(self,superficie):
-        pygame.draw.circle(superficie, self.color, self.rect.center, 20)        
+        pygame.draw.circle(superficie, self.color, self.rect.center, 50)        
 
 # Paso 19. Crear obstáculos
 # --- CLASE PARED / OBSTÁCULOS ---
@@ -239,7 +239,7 @@ sala_y = 0
 salas_interacciones = {
     #Paso 38. Integramos un NPC para probar la interacción
     (-1,0) : [
-        NPC(500, 400, "Guardián", "No puedes seguir avanzando.",(150, 150, 250))
+        NPC(0, alto_pantalla//2 - 50, "Guardián", "No puedes seguir avanzando.",(150, 150, 250))
         ],
     (0,-1) : [
         Cofre(400, 300),
