@@ -1,5 +1,5 @@
-# Interacción con NPCs, Salas y Objetos Condicionados
-#====================================================
+# Final del juego y botón de reinicio
+#====================================
 import pygame
 import sys
 
@@ -50,6 +50,19 @@ class SistemaDialogo:
         
         texto_cerrar = fuente.render("[E] para cerrar", True, (150, 150, 150))
         superficie.blit(texto_cerrar, (self.caja_rect.x + self.caja_rect.width - 150, self.caja_rect.y + self.caja_rect.height - 30))
+# Paso 16. Creamos el NPC que nos ayudará a terminar el juego
+# --- CLASE DEL PERSONAJE FINAL ---
+class Principe:
+    def __init__(self, x, y):
+        self.rect = pygame.Rect(x, y, 60, 80)
+        self.color = (240, 200, 50)  # Color dorado/real
+
+    def interactuar(self, inventario):
+        return "Príncipe", "¡Has traído la Reliquia Antigua! El reino está a salvo gracias a ti."
+
+    def dibujar(self, superficie):
+        pygame.draw.circle(superficie, self.color, self.rect.center, 35)
+
 # --- CLASE PERSONAJE NO JUGADOR ---
 class NPC:
     def __init__(self, x, y, nombre, linea_dialogo, color):
@@ -324,7 +337,13 @@ sala_y = 0
 # Paso 2. Integrar al mercader en el mapa a través de las salas
 # Paso 5. Integramos al enemigo patrullando el mapa
 # Paso 11. Reemplazamos el NPC de la sala Oeste para que se convierta en el Guardia
-salas_interacciones = {
+# Paso 17. Agrupamos la creación de salas en una función para permitir el reinicio del juego.
+def crear_mapa():
+    return {
+    # Implementamos la sala con el personaje final
+    (-2,0) : [
+        Principe(600, 300)          #Actualizado
+        ],
     (-1,0) : [
         Guardia(50, alto_pantalla//2 - 40)
         ],
@@ -348,11 +367,14 @@ salas_interacciones = {
         Enemigo(400, 200, 200, 500)     #Actualizado
     ]
 }
-
+    
+salas_interacciones = crear_mapa()
+# Paso 18. Implementar el color de la sala final
 salas_colores = {
     (0,0):(30,30,30),
     (1,0):(50,20,20),
     (-1,0):(20,50,20),
+    (-2,0):(60,40,80),          #Actualizado (Salón Púrpura)
     (0,1):(20,20,50),
     (0,-1):(50,50,20),
     (0,-2):(10,10,25)
@@ -375,6 +397,12 @@ salas_paredes = {
 inventario_jugador = Inventario()
 
 encendido = True
+
+# Paso 19. Implementamos las variables que nos permitirán controlar el estado final del juego
+# Variable de estado de victoria
+juego_ganado = False
+fuente_victoria = pygame.font.SysFont("arial", 48, bold=True)
+
 while encendido:
     obstaculos_actuales = salas_paredes.get((sala_x, sala_y), [])
     interacciones_actuales = salas_interacciones.get((sala_x,sala_y), [])
@@ -383,7 +411,8 @@ while encendido:
     for obj in interacciones_actuales:
         # Paso 3. Incluir al mercader en la pared temporal para que no sea atravesado
         # Paso 14. Actualizar la pared temporal para incluir al guardia
-        if isinstance(obj, (NPC, Mercader, Guardia)):        #Actualizado
+        # Paso 20. Actualizar la pared temporal para incluir al personaje final
+        if isinstance(obj, (NPC, Mercader, Guardia, Principe)):        #Actualizado
             class ParedTemporal:
                 def __init__(self, rect):
                     self.rect = rect
@@ -409,7 +438,21 @@ while encendido:
                             if isinstance(objeto, PuertaTeleport):
                                 sala_x, sala_y = objeto.destino_sala
                                 jugador.rect.x, jugador.rect.y = objeto.destino_pos
+                            # Paso 21. Implementar el método para que termine el juego despues de hablar con [E]
+                            if isinstance(objeto, Principe):
+                                juego_ganado = True
                             break
+            # Paso 22. Agregar la detección de la tecla [R] para reiniciar
+            elif evento.key == pygame.K_r:
+                if juego_ganado:
+                    juego_ganado = False
+                    sala_x, sala_y = 0, 0
+                    jugador.rect.x = ancho_pantalla // 2 - 20
+                    jugador.rect.y = alto_pantalla // 2 - 20
+                    inventario_jugador = Inventario()
+                    salas_interacciones = crear_mapa()
+                    sistema_dialogo.cerrar()           
+                    
             # Paso 6. Agregar la detección de la tecla [A] para atacar
             elif evento.key == pygame.K_a: # Atacar
                 zona_jugador = jugador.obtener_zona_interaccion()
@@ -466,7 +509,20 @@ while encendido:
     sistema_dialogo.dibujar(pantalla)
 
     inventario_jugador.dibujar(pantalla)
-    
+    # Paso 22. Dibujar el mensaje de victoria en la pantalla
+    if juego_ganado:
+        # Sombra del texto
+        texto_sombra = fuente_victoria.render("¡HAS GANADO EL JUEGO!", True, (0, 0, 0))
+        pantalla.blit(texto_sombra, (ancho_pantalla // 2 - texto_sombra.get_width() // 2 + 3, 203))
+
+        # Texto principal en dorado
+        texto_v = fuente_victoria.render("¡HAS GANADO EL JUEGO!", True, (255, 215, 0))
+        pantalla.blit(texto_v, (ancho_pantalla // 2 - texto_v.get_width() // 2, 200))
+
+        # Indicación de reinicio
+        texto_r = fuente.render("Presiona [R] para reiniciar la aventura", True, (200, 200, 200))
+        pantalla.blit(texto_r, (ancho_pantalla // 2 - texto_r.get_width() // 2, 270))
+        
     pygame.display.flip()
     
     reloj.tick(FPS)
