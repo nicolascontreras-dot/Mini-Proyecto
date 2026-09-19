@@ -4,11 +4,14 @@
 # Desde la fase 9 a 11 se estableció la estructura básica del juego, de aquí en adelante
 # solo se pulen y actualizan para mejorar la fluidez y mecánicas del juego. Por lo tanto,
 # los pasos de reinician y se asume que todo lo anterior se comprende a la perfección.
+from pathlib import Path
 import pygame
 import sys
 
 pygame.init()
 pygame.font.init()
+CARPETA_PROYECTO = Path(__file__).parent
+CARPETA_IMAGENES = CARPETA_PROYECTO / "imagenes"
 
 # --- HERRAMIENTAS ---
 reloj = pygame.time.Clock()
@@ -21,6 +24,18 @@ alto_pantalla = 720
 pantalla = pygame.display.set_mode((ancho_pantalla,alto_pantalla))
 pygame.display.set_caption("Mi Juego de Aventura")
 
+# --- CARGA DE IMÁGENES / SPRITES ---
+hoja_sprites = pygame.image.load(CARPETA_IMAGENES/"aventurero_spritesheet.png").convert_alpha()
+ancho_hoja = hoja_sprites.get_width()
+alto_frame = hoja_sprites.get_height()
+ancho_frame = ancho_hoja // 4
+
+imagenes_jugador = {
+    "abajo" : pygame.transform.scale_by(hoja_sprites.subsurface(pygame.Rect(0, 0, ancho_frame, alto_frame)), 0.2),
+    "derecha" : pygame.transform.scale_by(hoja_sprites.subsurface(pygame.Rect(ancho_frame, 0, ancho_frame, alto_frame)), 0.2),
+    "izquierda" : pygame.transform.scale_by(hoja_sprites.subsurface(pygame.Rect(ancho_frame*2, 0, ancho_frame, alto_frame)), 0.2),
+    "arriba" : pygame.transform.scale_by(hoja_sprites.subsurface(pygame.Rect(ancho_frame*3, 0, ancho_frame, alto_frame)), 0.2)
+}
 # --- CLASE DE SISTEMA DE DIÁLOGOS ---
 class SistemaDialogo:
     # --- ATRIBUTOS ---
@@ -171,22 +186,29 @@ class Cueva:
 class Jugador:
     # --- ATRIBUTOS ---
     def __init__(self, x, y):
-        self.tamaño = 40
-        self.rect = pygame.Rect(x, y, self.tamaño, self.tamaño)
-        self.velocidad = 6
-        self.color = (0, 200, 100)
+        self.velocidad = 5
+        self.direccion = "abajo"
+        self.imagen = imagenes_jugador[self.direccion]
+        self.rect = self.imagen.get_rect(topleft=(x, y))
+                
     # --- MÉTODO DE MOVIMIENTO --- 
     def mover(self, teclas, obstaculos):
         dx = 0
         dy = 0
         if teclas[pygame.K_LEFT]:
             dx -= self.velocidad
+            self.direccion = "izquierda"
         if teclas[pygame.K_RIGHT]:
             dx += self.velocidad
+            self.direccion = "derecha"
         if teclas[pygame.K_UP]:
             dy -= self.velocidad
+            self.direccion = "arriba"
         if teclas[pygame.K_DOWN]:
             dy += self.velocidad
+            self.direccion = "abajo"
+            
+        self.imagen = imagenes_jugador[self.direccion]
             
         self.rect.x += dx
         for pared in obstaculos:
@@ -209,7 +231,7 @@ class Jugador:
         return self.rect.inflate(30,30)
     # --- MÉTODO PARA MOSTRAR EL PERSONAJE ---
     def dibujar(self, superficie):
-        pygame.draw.rect(superficie, self.color, self.rect)
+        superficie.blit(self.imagen, self.rect)
 # --- CLASE PERSONAJE AGRESIVO ---
 class Enemigo:
     # --- ATRIUTOS ---
@@ -432,8 +454,8 @@ while encendido:
                 if juego_ganado:
                     juego_ganado = False
                     sala_x, sala_y = 0, 0
-                    jugador.rect.x = ancho_pantalla // 2 - 20
-                    jugador.rect.y = alto_pantalla // 2 - 20
+                    jugador.rect.x = ancho_pantalla // 2 - jugador.rect.width // 2
+                    jugador.rect.y = alto_pantalla // 2 - jugador.rect.height // 2
                     inventario_jugador = Inventario()
                     salas_interacciones = crear_mapa()
                     sistema_dialogo.cerrar()                
@@ -455,16 +477,15 @@ while encendido:
     if not sistema_dialogo.activo:
         teclas = pygame.key.get_pressed()
         jugador.mover(teclas, lista_colisiones)
-    # --- IMPLEMENTAR LA TRANSICIÓN ENTRE LAS SALAS AL LLEGAR AL BORDE ---
     # --- TRANSICIÓN DE SALAS Y CONTROL DE LÍMITES DEL MAPA ---
     # Eje Horizontal (Derecha)
-    if jugador.rect.x > ancho_pantalla - jugador.tamaño:
+    if jugador.rect.x > ancho_pantalla - jugador.rect.width:
         siguiente = conexiones_mapa.get(((sala_x, sala_y), "derecha"))
         if siguiente:
             sala_x, sala_y = siguiente
             jugador.rect.x = 5  # Aparece en el borde izquierdo de la nueva sala
         else:
-            jugador.rect.x = ancho_pantalla - jugador.tamaño
+            jugador.rect.x = ancho_pantalla - jugador.rect.width
 
     # Eje Horizontal (Izquierda)
     elif jugador.rect.x < 0:
@@ -472,36 +493,36 @@ while encendido:
             guardia_permitido = any(isinstance(obj, Guardia) and obj.permitido for obj in interacciones_actuales)
             if guardia_permitido:
                 sala_x = -2
-                jugador.rect.x = ancho_pantalla - jugador.tamaño - 5
+                jugador.rect.x = ancho_pantalla - jugador.rect.width - 5
             else:
                 jugador.rect.x = 0  # El guardia bloquea el paso al oeste
         else:
             siguiente = conexiones_mapa.get(((sala_x, sala_y), "izquierda"))
             if siguiente:
                 sala_x, sala_y = siguiente
-                jugador.rect.x = ancho_pantalla - jugador.tamaño - 5  # Aparece en el borde derecho
+                jugador.rect.x = ancho_pantalla - jugador.rect.width - 5  # Aparece en el borde derecho
                 
                 # Si entramos a la sala del guardia (-1, 0), centramos verticalmente en el pasillo
                 if (sala_x, sala_y) == (-1, 0):
-                    jugador.rect.y = (alto_pantalla // 2) - (jugador.tamaño // 2)
+                    jugador.rect.y = (alto_pantalla // 2) - (jugador.rect.height // 2)
             else:
                 jugador.rect.x = 0
 
     # Eje Vertical (Abajo)
-    if jugador.rect.y > alto_pantalla - jugador.tamaño:
+    if jugador.rect.y > alto_pantalla - jugador.rect.height:
         siguiente = conexiones_mapa.get(((sala_x, sala_y), "abajo"))
         if siguiente:
             sala_x, sala_y = siguiente
             jugador.rect.y = 5  # Aparece arriba en la nueva sala
         else:
-            jugador.rect.y = alto_pantalla - jugador.tamaño
+            jugador.rect.y = alto_pantalla - jugador.rect.height
 
     # Eje Vertical (Arriba)
     elif jugador.rect.y < 0:
         siguiente = conexiones_mapa.get(((sala_x, sala_y), "arriba"))
         if siguiente:
             sala_x, sala_y = siguiente
-            jugador.rect.y = alto_pantalla - jugador.tamaño - 5  # Aparece abajo en la nueva sala
+            jugador.rect.y = alto_pantalla - jugador.rect.height - 5  # Aparece abajo en la nueva sala
         else:
             jugador.rect.y = 0
     # --- ACTUALIZAR LA CONFIGURACIÓN DEL JUEGO EN CADA SALA ---
