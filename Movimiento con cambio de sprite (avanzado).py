@@ -176,5 +176,4 @@ while encendido:
 
     reloj.tick(60)
 
-
 pygame.quit()
