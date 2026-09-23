@@ -72,23 +72,17 @@ jugadores.add(jugador)
 encendido = True
 
 while encendido:
-
     for event in pygame.event.get():
-
         if event.type == pygame.QUIT:
             encendido = False
 
     teclas = pygame.key.get_pressed()
-
     jugador.mover(teclas)
-
+    
     pantalla.fill((0, 0, 0))
-
     jugadores.draw(pantalla)
-
+    
     pygame.display.flip()
-
     reloj.tick(60)
-
-
 pygame.quit()
+sys.exit()
