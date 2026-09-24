@@ -87,17 +87,12 @@ class Jugador(pygame.sprite.Sprite):
     def __init__(self, imagenes, coordenada_x, coordenada_y):
         super().__init__()
         self.imagenes = imagenes
-        
         self.direccion = "abajo"
-        
         self.frame = 0
         self.contador_animacion = 0
-        
         self.image = self.imagenes[self.direccion][self.frame]
-        
         self.rect = self.image.get_rect()
         self.rect.topleft = (coordenada_x, coordenada_y)
-        
         self.velocidad = 5
     
     def cambiar_direccion(self, nueva_direccion):

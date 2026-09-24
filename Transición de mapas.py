@@ -112,9 +112,9 @@ while encendido:
         sala_y -= 1
         jugador.rect.top = alto_pantalla
 
-    fondo_actual = salas_imagenes.get((sala_x,sala_y),(10,10,10)) 
+    fondo_actual = salas_imagenes.get((sala_x,sala_y), (10,10,10)) 
 
-    pantalla.blit(fondo_actual, (0,0))
+    pantalla.blit(fondo_actual, (0, 0))
 
     jugadores.draw(pantalla)
 
