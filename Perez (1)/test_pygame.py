@@ -1,9 +1,7 @@
-
-
-
- 
 from pathlib import Path
-import pygame, sys
+import pygame
+import sys
+
 pygame.init()
 reloj= pygame.time.Clock()
 
@@ -14,21 +12,18 @@ ancho_ventana = 1200
 alto_ventana = 720                                              
 tamaño_ventana = (ancho_ventana,alto_ventana)                   
 pantalla = pygame.display.set_mode(tamaño_ventana) 
-
-pantalla.fill((237, 201, 175)) #escoger color de fondo adecuado  (60,80,100) 237, 201, 175
-
+#pantalla.fill((237, 201, 175)) #escoger color de fondo adecuado  (60,80,100) 237, 201, 175
 pygame.display.set_caption('Pygame Helenanito')
 
 CARPETA_PROYECTO = Path(__file__).parent
 CARPETA_IMAGENES = CARPETA_PROYECTO / 'images'
 
-pantalla_playa = pygame.image.load(CARPETA_IMAGENES / 'playa.jpeg')
+pantalla_playa = pygame.image.load(CARPETA_IMAGENES / 'playa.jpeg').convert()
 pantalla_playa = pygame.transform.scale(pantalla_playa,tamaño_ventana)
-pantalla_bifurcacion = pygame.image.load(CARPETA_IMAGENES / 'bifurcacion.jpeg')
+pantalla_bifurcacion = pygame.image.load(CARPETA_IMAGENES / 'bifurcacion.jpeg').convert()
 pantalla_bifurcacion = pygame.transform.scale(pantalla_bifurcacion,tamaño_ventana)
-pantalla_cueva= pygame.image.load(CARPETA_IMAGENES / 'cueva.jpeg')
+pantalla_cueva= pygame.image.load(CARPETA_IMAGENES / 'cueva.jpeg').convert()
 pantalla_cueva = pygame.transform.scale(pantalla_cueva,tamaño_ventana)
-                                              
 
 prota_abajo =  pygame.image.load(CARPETA_IMAGENES/"sprite_abajo_0.png").convert_alpha()
 prota_abajo_1 = pygame.image.load(CARPETA_IMAGENES/"sprite_abajo_1.png").convert_alpha()
@@ -65,6 +60,7 @@ imagenes_izquierda = [
     prota_izquierda_1,
     prota_izquierda_2
 ]
+
 imagenes_abajo = [pygame.transform.scale_by(imagen, 0.3) for imagen in imagenes_abajo]
 imagenes_arriba = [pygame.transform.scale_by(imagen, 0.3) for imagen in imagenes_arriba]
 imagenes_derecha = [pygame.transform.scale_by(imagen, 0.3) for imagen in imagenes_derecha]
@@ -75,12 +71,8 @@ imagenes_jugador = {
     'izquierda' : imagenes_izquierda,
     'arriba' : imagenes_arriba,
     'abajo' : imagenes_abajo
-
 }
-
-
 #tamaño 177x341
-
 anne_imagen = pygame.image.load(CARPETA_IMAGENES / 'vision_frente_anne.png')
 anne_imagen=pygame.transform.scale(anne_imagen, (53.1, 102.3))
 
@@ -101,9 +93,7 @@ texto_playa = fuente.render("La Playa",False,(255,255,255))
 texto_bifurcacion = fuente.render("Bifurcacion",False,(255,255,255))
 texto_cueva = fuente.render("La Cueva",False,(255,255,255))
 
-
 #Obstáculos
-
 mar = pygame.Rect(0,464,464,531)
 mar_derecha = pygame.Rect(492,336,778,336)
 palmeras_izquierda = pygame.Rect(0,0,53,434)
@@ -132,29 +122,21 @@ bloque_sup_der = pygame.Rect(672.9,255.75,212.4,51.3)
 bloque_inf_der =pygame.Rect(672.9,454.5,265.4,51.3)
 obstaculos_cueva =[esquina_superior_izq,esquina_superior_der,columna_izq,columna_der,esquina_inferior_izq,esquina_inferior_der,bloque_sup_izq,bloque_inf_izq,bloque_sup_der,bloque_inf_der]
 
-
 class Jugador(pygame.sprite.Sprite):  
-
     def __init__(self, imagenes, coordenada_x, coordenada_y):
         super().__init__()
         self.imagenes = imagenes
-        
         self.direccion = "abajo"
-        
         self.frame = 0
         self.contador_animacion = 0
-        
         self.image = self.imagenes[self.direccion][self.frame]
-        
         self.rect = self.image.get_rect()
         self.rect.topleft = (coordenada_x, coordenada_y)
-        
         self.velocidad = 5
         self.tiene_cinturon = False
     
     def cambiar_direccion(self, nueva_direccion):
         if self.direccion != nueva_direccion:
-            
             self.direccion = nueva_direccion
             self.frame = 0
             
@@ -225,9 +207,6 @@ class Jugador(pygame.sprite.Sprite):
             self.frame = 0
             self.image = self.imagenes[self.direccion][self.frame]
         
-        
-        
-
     def recoger (self, objetos, inventario):
         for objeto in objetos:
             if self.rect.colliderect(objeto.rect):
